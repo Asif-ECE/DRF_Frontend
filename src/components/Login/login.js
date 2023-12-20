@@ -2,17 +2,22 @@ import styles from './login.module.css'
 import Link from 'next/link'
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { userLogin } from '@/utilities/api';
-import { useLoginContext } from '@/contexts/loginContext';
 
 
-export default function Login() {
+export default function Login({ loginContexts }) {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
     });
 
-    const { isLoggedIn, setIsLoggedIn } = useLoginContext()
+    const {
+        loginState,
+        handleLogin,
+        isLogging,
+        error,
+        errorMessage,
+        clearError
+    } = loginContexts
 
     const router = useRouter()
 
@@ -26,27 +31,24 @@ export default function Login() {
 
         try {
             // Make API request to Django backend
-            const response = await userLogin(formData);
-            console.log('User login successfully:', response);
-
-            localStorage.setItem('drfAccessToken', response.access)
-            localStorage.setItem('drfRefreshToken', response.refresh)
-
-            router.push('/')
-
-            // Clear form after successful registration
-            setFormData({
-                email: '',
-                password: '',
-            });
-        } catch (error) {
-            console.error('Error during registration:', error);
-            if (error.response.status) {
+            const hasLoggedIn = await handleLogin(formData)
+            console.log("Is login successful: ", hasLoggedIn)
+            if (!hasLoggedIn) {
                 setFormData({
                     email: '',
                     password: '',
                 });
+                clearError()
+            } else {
+                console.log("Login successful")
+                router.push('/')
             }
+        } catch (err) {
+            console.log('Error during registration:', err);
+            setFormData({
+                email: '',
+                password: '',
+            });
         }
     };
 
